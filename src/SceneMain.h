@@ -18,6 +18,7 @@ public:
     void clean() override;
     void keyBoardControl(float deltatime);
     void shootPlayer();                          // 发射子弹
+    void useSkill();                             // 使用技能
     void updatePlayerProjectiles(float deltaTime); // 更新子弹
     void renderPlayerProjectiles();              // 渲染子弹
 
@@ -47,6 +48,8 @@ private:
     Game &game;
     Player player;
     ProjectilePlayer projectilePlayerTemplate;//子弹模板
+    ProjectilePlayer projectilePlayerTemplate1{600,1};
+    ProjectilePlayer projectilePlayerTemplate2{600,1};
     // 存储活动子弹的列表
     std::list<ProjectilePlayer*> projectilesPlayer;
 
@@ -55,10 +58,13 @@ private:
     std::uniform_real_distribution<float> dis; // 随机数分布器
     
     // 敌机相关成员
-    Enemy enemyTemplate;                      // 敌机模板
+    Enemy enemyTemplate1;                      // 敌机模板
+    Enemy enemyTemplate2{2400,120,3};                      // 敌机模板
     std::list<Enemy*> enemies;                // 存储活动敌机的列表
 
-    ProjectileEnemy projectileEnemyTemplate;    // 敌机子弹模板
+    ProjectileEnemy projectileEnemyTemplate1;    // 敌机子弹模板
+    ProjectileEnemy projectileEnemyTemplate2;    // 敌机子弹模版
+    ProjectileEnemy projectileEnemyTemplate3{220,2};    // 敌机子弹模版
     std::list<ProjectileEnemy*> projectilesEnemy; // 敌机子弹容器
 
     bool isDead{false};

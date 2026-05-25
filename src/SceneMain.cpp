@@ -48,6 +48,11 @@ void SceneMain::handleEvent(SDL_Event *event)
             player.lastShootTime = 0;
         }
     }
+    if (event->type == SDL_KEYDOWN && event->key.keysym.scancode == SDL_SCANCODE_L) {
+        if (player.hasSkill && !player.underSkill && !isDead) {
+            useSkill();
+        }
+    }
 }
 
 void SceneMain::init()
@@ -78,24 +83,59 @@ void SceneMain::init()
     projectilePlayerTemplate.width /= 4;
     projectilePlayerTemplate.height /= 4;
 
+    projectilePlayerTemplate2.texture = IMG_LoadTexture(game.getRenderer(), "../assets/image/laser-2.png");
+    if (projectilePlayerTemplate2.texture == nullptr) {
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to load laser-2.png! SDL_Error: %s\n", SDL_GetError());
+    }
+    SDL_QueryTexture(projectilePlayerTemplate2.texture, NULL, NULL, &projectilePlayerTemplate2.width, &projectilePlayerTemplate2.height);
+    projectilePlayerTemplate2.width /= 4;
+    projectilePlayerTemplate2.height /= 4;
+    projectilePlayerTemplate1.texture = IMG_LoadTexture(game.getRenderer(), "../assets/image/laser-3.png");
+    if (projectilePlayerTemplate1.texture == nullptr) {
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to load laser-3.png! SDL_Error: %s\n", SDL_GetError());
+    }
+    SDL_QueryTexture(projectilePlayerTemplate1.texture, NULL, NULL, &projectilePlayerTemplate1.width, &projectilePlayerTemplate1.height);
+    projectilePlayerTemplate1.width /= 4;
+    projectilePlayerTemplate1.height /= 4;
     //敌机
-    enemyTemplate.texture = IMG_LoadTexture(game.getRenderer(), "../assets/image/insect-2.png");
-    if (enemyTemplate.texture == nullptr) {
+    enemyTemplate1.texture = IMG_LoadTexture(game.getRenderer(), "../assets/image/insect-2.png");
+    if (enemyTemplate1.texture == nullptr) {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to load insect-2.png! SDL_Error: %s\n", SDL_GetError());
     }
-    SDL_QueryTexture(enemyTemplate.texture, NULL, NULL, &enemyTemplate.width, &enemyTemplate.height);
-    enemyTemplate.width /= 4;
-    enemyTemplate.height /= 4;
+    SDL_QueryTexture(enemyTemplate1.texture, NULL, NULL, &enemyTemplate1.width, &enemyTemplate1.height);
+    enemyTemplate1.width /= 4;
+    enemyTemplate1.height /= 4;
+
+    enemyTemplate2.texture = IMG_LoadTexture(game.getRenderer(), "../assets/image/insect-1.png");
+    if (enemyTemplate2.texture == nullptr) {
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to load insect-1.png! SDL_Error: %s\n", SDL_GetError());
+    }
+    SDL_QueryTexture(enemyTemplate2.texture, NULL, NULL, &enemyTemplate2.width, &enemyTemplate2.height);
+    enemyTemplate2.width /= 3;
+    enemyTemplate2.height /= 3;
 
     //敌机子弹
-     projectileEnemyTemplate.texture = IMG_LoadTexture(game.getRenderer(), "../assets/image/bullet-1.png");
-    if (projectileEnemyTemplate.texture == nullptr) {
+     projectileEnemyTemplate1.texture = IMG_LoadTexture(game.getRenderer(), "../assets/image/bullet-1.png");
+    if (projectileEnemyTemplate1.texture == nullptr) {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to load bullet-1.png! SDL_Error: %s\n", SDL_GetError());
     }
-    SDL_QueryTexture(projectileEnemyTemplate.texture, NULL, NULL, &projectileEnemyTemplate.width, &projectileEnemyTemplate.height);
-    projectileEnemyTemplate.width /= 4;
-    projectileEnemyTemplate.height /= 4;
-
+    SDL_QueryTexture(projectileEnemyTemplate1.texture, NULL, NULL, &projectileEnemyTemplate1.width, &projectileEnemyTemplate1.height);
+    projectileEnemyTemplate1.width /= 4;
+    projectileEnemyTemplate1.height /= 4;
+    projectileEnemyTemplate2.texture = IMG_LoadTexture(game.getRenderer(), "../assets/image/bullet-2.png");
+    if (projectileEnemyTemplate2.texture == nullptr) {
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to load bullet-2.png! SDL_Error: %s\n", SDL_GetError());
+    }
+    SDL_QueryTexture(projectileEnemyTemplate2.texture, NULL, NULL, &projectileEnemyTemplate2.width, &projectileEnemyTemplate2.height);
+    projectileEnemyTemplate2.width /= 4;
+    projectileEnemyTemplate2.height /= 4;
+    projectileEnemyTemplate3.texture = IMG_LoadTexture(game.getRenderer(), "../assets/image/bullet.png");
+    if (projectileEnemyTemplate3.texture == nullptr) {
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to load bullet.png! SDL_Error: %s\n", SDL_GetError());
+    }
+    SDL_QueryTexture(projectileEnemyTemplate3.texture, NULL, NULL, &projectileEnemyTemplate3.width, &projectileEnemyTemplate3.height);
+    projectileEnemyTemplate3.width /= 3;
+    projectileEnemyTemplate3.height /= 3;
     //爆炸
     explosionTemplate.texture = IMG_LoadTexture(game.getRenderer(), "../assets/effect/explosion.png");
     if (explosionTemplate.texture == nullptr) {
@@ -181,12 +221,12 @@ void SceneMain::clean()
     {
         SDL_DestroyTexture(projectilePlayerTemplate.texture);
     }
-    if (enemyTemplate.texture != nullptr)
+    if (enemyTemplate1.texture != nullptr)
     {
-        SDL_DestroyTexture(enemyTemplate.texture);
+        SDL_DestroyTexture(enemyTemplate1.texture);
     }
-    if (projectileEnemyTemplate.texture != nullptr) {
-        SDL_DestroyTexture(projectileEnemyTemplate.texture);
+    if (projectileEnemyTemplate1.texture != nullptr) {
+        SDL_DestroyTexture(projectileEnemyTemplate1.texture);
     }
      if (explosionTemplate.texture != nullptr){
         SDL_DestroyTexture(explosionTemplate.texture);
@@ -258,13 +298,44 @@ void SceneMain::shootPlayer()
     projectilesPlayer.push_back(projectile);
 }
 
+void SceneMain::useSkill()
+{
+    if(isDead) return;
+    player.hasSkill = false;
+    player.underSkill = true;
+    player.lastSkillTime = SDL_GetTicks();
+
+    // 左前方子弹（projectilePlayerTemplate1）
+    for(float i = 3.5; i< 8;i+=0.5){
+    auto projectile1 = new ProjectilePlayer(projectilePlayerTemplate1);
+    projectile1->position.x = player.position.x + player.width / 2 - projectile1->width / 2;
+    projectile1->position.y = player.position.y;
+    // 方向：左前方，约30度偏移
+    float angle1 = -M_PI / i;  // -30度
+    projectile1->direction.x = sin(angle1);
+    projectile1->direction.y = -cos(angle1);
+    projectilesPlayer.push_back(projectile1);
+
+    // 右前方子弹（projectilePlayerTemplate2）
+    auto projectile2 = new ProjectilePlayer(projectilePlayerTemplate2);
+    projectile2->position.x = player.position.x + player.width / 2 - projectile2->width / 2;
+    projectile2->position.y = player.position.y;
+    // 方向：右前方，约30度偏移
+    float angle2 = M_PI / i;  // +30度
+    projectile2->direction.x = sin(angle2);
+    projectile2->direction.y = -cos(angle2);
+    projectilesPlayer.push_back(projectile2);
+    }
+}
+
 void SceneMain::updatePlayerProjectiles(float deltaTime)
 {
     int margin = 32; // 子弹超出屏幕外边界的距离
     for (auto it = projectilesPlayer.begin(); it != projectilesPlayer.end();){
         auto projectile = *it;
-        // 更新子弹位置
-        projectile->position.y -= projectile->speed * deltaTime;
+        // 更新子弹位置（根据方向向量）
+        projectile->position.x += projectile->speed * projectile->direction.x * deltaTime;
+        projectile->position.y += projectile->speed * projectile->direction.y * deltaTime;
         // 检查子弹是否超出屏幕
         if (projectile->position.y + margin < 0){
             delete projectile;
@@ -323,8 +394,8 @@ void SceneMain::spawEnemy()
         return;
     }
     
-    // 创建新敌机
-    Enemy* enemy = new Enemy(enemyTemplate);
+    // 创建新敌机，随机生成二者之一
+    Enemy* enemy = dis(gen) > 0.5f ? new Enemy(enemyTemplate1) : new Enemy(enemyTemplate2);
     
     // 利用随机数决定敌机的水平位置
     enemy->position.x = dis(gen) * (game.getWindowWidth() - enemy->width);
@@ -383,7 +454,7 @@ void SceneMain::renderEnemies()
 void SceneMain::shootEnemy(Enemy *enemy)
 {
     // 创建新子弹
-    auto projectile = new ProjectileEnemy(projectileEnemyTemplate);
+    auto projectile = enemy->speed == 200? new ProjectileEnemy(projectileEnemyTemplate1) : (dis(gen) > 0.82f ? new ProjectileEnemy(projectileEnemyTemplate2) : new ProjectileEnemy(projectileEnemyTemplate3));
     
     // 设置子弹初始位置（从敌机中央发射）
     projectile->position.x = enemy->position.x + enemy->width / 2 - projectile->width / 2;
@@ -497,6 +568,93 @@ void SceneMain::updatePlayer(float deltaTime)
         if (timeStopTime <= 0.0f) {
             timeStopTime = 0.0f;
             isTimeStopped = false;
+        }
+    }
+
+    // 更新技能状态
+    if (player.underSkill) {
+        // 技能持续期间按冷却间隔发射两侧子弹
+        auto currentTime = SDL_GetTicks();
+        if (currentTime - player.lastShootTime > player.coolDown) {
+            player.skillTime -= 1;
+            for(float i = 9 ;i< 21;i+=2.5){
+    auto projectile1 = new ProjectilePlayer(projectilePlayerTemplate1);
+    projectile1->position.x = player.position.x + player.width / 2 - projectile1->width / 2;
+    projectile1->position.y = player.position.y;
+    // 方向：左前方，约30度偏移
+    float angle1 = -M_PI / i;  // -30度
+    projectile1->direction.x = sin(angle1);
+    projectile1->direction.y = -cos(angle1);
+    projectilesPlayer.push_back(projectile1);
+
+    // 右前方子弹（projectilePlayerTemplate2）
+    auto projectile2 = new ProjectilePlayer(projectilePlayerTemplate2);
+    projectile2->position.x = player.position.x + player.width / 2 - projectile2->width / 2;
+    projectile2->position.y = player.position.y;
+    // 方向：右前方，约30度偏移
+    float angle2 = M_PI / i;  // +30度
+    projectile2->direction.x = sin(angle2);
+    projectile2->direction.y = -cos(angle2);
+    projectilesPlayer.push_back(projectile2);
+    }
+            // 左前方子弹
+            for(float i = 20; i< 100;i+=10){
+    auto projectile1 = new ProjectilePlayer(projectilePlayerTemplate1);
+    projectile1->position.x = player.position.x + player.width / 2 - projectile1->width / 2;
+    projectile1->position.y = player.position.y;
+    // 方向：左前方，约30度偏移
+    float angle1 = -M_PI / i;  // -30度
+    projectile1->direction.x = sin(angle1);
+    projectile1->direction.y = -cos(angle1);
+    projectilesPlayer.push_back(projectile1);
+
+    // 右前方子弹（projectilePlayerTemplate2）
+    auto projectile2 = new ProjectilePlayer(projectilePlayerTemplate2);
+    projectile2->position.x = player.position.x + player.width / 2 - projectile2->width / 2;
+    projectile2->position.y = player.position.y;
+    // 方向：右前方，约30度偏移
+    float angle2 = M_PI / i;  // +30度
+    projectile2->direction.x = sin(angle2);
+    projectile2->direction.y = -cos(angle2);
+    projectilesPlayer.push_back(projectile2);
+    }
+        for(float i = 3.5; i< 8;i+=1){
+    auto projectile1 = new ProjectilePlayer(projectilePlayerTemplate1);
+    projectile1->position.x = player.position.x + player.width / 2 - projectile1->width / 2;
+    projectile1->position.y = player.position.y;
+    // 方向：左前方，约30度偏移
+    float angle1 = -M_PI / i;  // -30度
+    projectile1->direction.x = sin(angle1);
+    projectile1->direction.y = -cos(angle1);
+    projectilesPlayer.push_back(projectile1);
+
+    // 右前方子弹（projectilePlayerTemplate2）
+    auto projectile2 = new ProjectilePlayer(projectilePlayerTemplate2);
+    projectile2->position.x = player.position.x + player.width / 2 - projectile2->width / 2;
+    projectile2->position.y = player.position.y;
+    // 方向：右前方，约30度偏移
+    float angle2 = M_PI / i;  // +30度
+    projectile2->direction.x = sin(angle2);
+    projectile2->direction.y = -cos(angle2);
+    projectilesPlayer.push_back(projectile2);
+    }
+
+            player.lastShootTime = currentTime;
+        }
+        // 技能持续时间结束
+        if (player.skillTime <= 0) {
+            player.skillTime = 0;
+            player.underSkill = false;
+            player.lastSkillTime = SDL_GetTicks();
+            player.skillTime = 3;  // 重置技能持续时间
+        }
+    }
+
+    // 技能冷却恢复
+    if (!player.hasSkill && !player.underSkill) {
+        auto currentTime = SDL_GetTicks();
+        if ((currentTime - player.lastSkillTime) / 1000.0f >= player.skillCD) {
+            player.hasSkill = true;
         }
     }
 
