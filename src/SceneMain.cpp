@@ -29,6 +29,10 @@ void SceneMain::render()
         SDL_Rect playerRect = {static_cast<int>(player.position.x), static_cast<int>(player.position.y), player.width, player.height};
     SDL_RenderCopy(game.getRenderer(), player.texture, NULL, &playerRect);
     }
+    if(player.hasShield){
+        SDL_Rect shieldRect = {static_cast<int>(player.position.x - 0.25 * player.width), static_cast<int>(player.position.y - 0.8 * player.height), static_cast<int>(1.5*player.width),static_cast<int>(1.5* player.height)};
+        SDL_RenderCopy(game.getRenderer(), shield_photo, NULL, &shieldRect);
+    }
     renderEnemies();
     renderExplosions();
     renderItems();
@@ -123,6 +127,11 @@ void SceneMain::init()
     SDL_QueryTexture(itemTimeTemplate.texture, NULL, NULL, &itemTimeTemplate.width, &itemTimeTemplate.height);
     itemTimeTemplate.width /= 4;
     itemTimeTemplate.height /= 4;
+
+    shield_photo = IMG_LoadTexture(game.getRenderer(), "../assets/image/shield.png");
+    if (shield_photo == nullptr) {
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to load shield.png! SDL_Error: %s\n", SDL_GetError());
+    }
     SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "SceneMain init");
 }
 
@@ -184,6 +193,15 @@ void SceneMain::clean()
     }
     if (itemLifeTemplate.texture != nullptr){
         SDL_DestroyTexture(itemLifeTemplate.texture);
+    }
+    if (itemShieldTemplate.texture != nullptr){
+        SDL_DestroyTexture(itemShieldTemplate.texture);
+    }
+    if (itemTimeTemplate.texture != nullptr){
+        SDL_DestroyTexture(itemTimeTemplate.texture);
+    }
+    if (shield_photo != nullptr){
+        SDL_DestroyTexture(shield_photo);
     }
 }
 void SceneMain::keyBoardControl(float deltatime){
@@ -459,6 +477,8 @@ void SceneMain::renderEnemyProjectiles()
 void SceneMain::updatePlayer(float deltaTime)
 {
     if (isDead) {
+        player.hasShield = false;
+        player.shieldTime = 0.0f;
         return;
     }
 

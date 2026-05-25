@@ -73,6 +73,8 @@ private:
     Item itemShieldTemplate{ItemType::Shield};
     Item itemTimeTemplate{ItemType::Time};
     std::list<Item*> items;
+
+    SDL_Texture * shield_photo; // 玩家护盾图片
     
 };
 
