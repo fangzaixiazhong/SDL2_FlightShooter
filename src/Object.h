@@ -6,7 +6,7 @@ struct Player{
     SDL_FPoint position = {0, 0};
     int width = 0;
     int height = 0;
-    int speed = 200;//每秒运动速度
+    int speed = 220;//每秒运动速度
     Uint32 coolDown = 500;        // 射击冷却时间（毫秒）
     Uint32 lastShootTime = 0;     // 上次射击的时间
     int currentHealth = 6;      // 玩家初始生命值为3
@@ -41,8 +41,9 @@ struct Enemy{
     Uint32 coolDown = 1300;     // 发射冷却时间（1秒）
     Uint32 lastShootTime = 0;   // 上次发射时间
     int currentHealth = 2;      // 敌机初始生命值为2
+    int score = 10;
     Enemy() = default;
-    Enemy(Uint32 coolDown,Uint32 speed,int h):coolDown(coolDown),speed(speed),currentHealth(h){};
+    Enemy(Uint32 coolDown,Uint32 speed,int h,int s):coolDown(coolDown),speed(speed),currentHealth(h),score(s){};
 };
 
 struct ProjectileEnemy{
@@ -84,7 +85,7 @@ struct Item{
     SDL_FPoint direction = {0, 0};
     int width = 0;
     int height = 0;
-    int speed = 200;
+    int speed = 180;
     int bounceCount = 3;
     ItemType type = ItemType::Life;
     Item(ItemType t):type(t){}

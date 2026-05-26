@@ -7,6 +7,7 @@
 #include "SceneMain.h"
 #include "SDL2/SDL_mixer.h"
 #include "SDL2/SDL_ttf.h"
+#include "Object.h"
 class Game
 {
 public:
@@ -32,6 +33,8 @@ public:
     bool getAutoShoot(){
         return aotoShoot;
     }
+    void backgroundUpdate(float deltaTime);
+    void renderBackground();
 private:
     Game(const Game&) = delete;
     Game& operator=(const Game&) = delete;
@@ -46,6 +49,8 @@ private:
     float frametime;
     float deltatime{0.016};//每帧时间（秒）
     bool aotoShoot{false};
+    Background nearStars;  // 近处的星星
+    Background farStars;   // 远处的星星
 };
 
 #endif

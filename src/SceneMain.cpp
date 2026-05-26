@@ -36,6 +36,7 @@ void SceneMain::render()
     renderEnemies();
     renderExplosions();
     renderItems();
+    renderUI();
     
 }
 
@@ -185,6 +186,18 @@ void SceneMain::init()
     if (shield_photo == nullptr) {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to load shield.png! SDL_Error: %s\n", SDL_GetError());
     }
+    //血量
+    uiHealth = IMG_LoadTexture(game.getRenderer(), "../assets/image/Health UI Black.png");
+    if (uiHealth == nullptr) {
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to load Health UI Black.png! SDL_Error: %s\n", SDL_GetError());
+    }
+    //初始化SDL_ttfLibrary
+    
+    // 载入字体
+    scoreFont = TTF_OpenFont("../assets/font/VonwaonBitmap-12px.ttf", 24);
+    if (scoreFont == nullptr) {
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to load font! SDL_ttf Error: %s\n", TTF_GetError());
+    }
     SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "SceneMain init");
 }
 
@@ -234,7 +247,9 @@ void SceneMain::clean()
         }
     }
     items.clear();
-
+    if (uiHealth != nullptr){
+        SDL_DestroyTexture(uiHealth);
+    }
     if(player.texture != NULL){
         SDL_DestroyTexture(player.texture);
     }
@@ -267,6 +282,10 @@ void SceneMain::clean()
     if(bgm != nullptr){
         Mix_HaltMusic();
         Mix_FreeMusic(bgm);
+    }
+    // 清理字体
+    if (scoreFont != nullptr){
+        TTF_CloseFont(scoreFont);
     }
 }
 void SceneMain::keyBoardControl(float deltatime){
@@ -729,6 +748,7 @@ void SceneMain::enemyExplode(Enemy *enemy)
     if (dis(gen) < 0.2f){
         dropItem(enemy);
     }
+    score += enemy->score;
     delete enemy;
 }
 
@@ -876,6 +896,7 @@ void SceneMain::playerGetItem(Item *item)
         }
         projectilesEnemy.clear();
     }
+    score += 5; // 获取物品增加5分
 }
 void SceneMain::renderItems()
 {
@@ -889,4 +910,34 @@ void SceneMain::renderItems()
         };
         SDL_RenderCopy(game.getRenderer(), item->texture, NULL, &itemRect);
     }   
+}
+
+// SceneMain.cpp
+void SceneMain::renderUI()
+{
+    int x = 10;
+    int y = 10;
+    int size = 32;
+    int offset = 40;
+    SDL_SetTextureColorMod(uiHealth, 100, 100, 100); // 颜色减淡
+    for (int i = 0; i < player.maxHealth; i++)
+    {
+        SDL_Rect rect = {x + i * offset, y, size, size};
+        SDL_RenderCopy(game.getRenderer(), uiHealth, NULL, &rect);
+    }
+    SDL_SetTextureColorMod(uiHealth, 255, 255, 255); // reset color
+    for (int i = 0; i < player.currentHealth; i++)
+    {
+        SDL_Rect rect = {x + i * offset, y, size, size};
+        SDL_RenderCopy(game.getRenderer(), uiHealth, NULL, &rect);
+    }
+
+    auto text = "SCORE:" + std::to_string(score);
+    SDL_Color color = {255, 255, 255, 255};  // 白色
+    SDL_Surface* surface = TTF_RenderUTF8_Solid(scoreFont, text.c_str(), color);
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(game.getRenderer(), surface);
+    SDL_Rect rect = {game.getWindowWidth() - 10 - surface->w, 10, surface->w, surface->h};
+    SDL_RenderCopy(game.getRenderer(), texture, NULL, &rect);
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
 }

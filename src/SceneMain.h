@@ -46,6 +46,8 @@ public:
     void playerGetItem(Item* item);
     void renderItems();
 
+    void renderUI();
+
 
 private:
     Game &game;
@@ -62,7 +64,7 @@ private:
     
     // 敌机相关成员
     Enemy enemyTemplate1;                      // 敌机模板
-    Enemy enemyTemplate2{2400,120,3};                      // 敌机模板
+    Enemy enemyTemplate2{2400,120,3,15};                      // 敌机模板
     std::list<Enemy*> enemies;                // 存储活动敌机的列表
 
     ProjectileEnemy projectileEnemyTemplate1;    // 敌机子弹模板
@@ -87,6 +89,11 @@ private:
 
     Mix_Music * bgm; // 背景音乐
     std::map<std::string, Mix_Chunk*> sounds; // 存储音效
+
+    SDL_Texture* uiHealth;
+
+    TTF_Font* scoreFont;
+    int score = 0;
     
 };
 
