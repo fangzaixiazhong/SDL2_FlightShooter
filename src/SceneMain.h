@@ -5,6 +5,9 @@
 #include "Scene.h"
 #include <list>
 #include <random>
+#include "SDL2/SDL_mixer.h"
+#include "SDL2/SDL_ttf.h"
+#include <map>
 class Game; // forward declaration,声明存在这个类，防止循环引用
 class SceneMain : public Scene {
 public:
@@ -81,6 +84,9 @@ private:
     std::list<Item*> items;
 
     SDL_Texture * shield_photo; // 玩家护盾图片
+
+    Mix_Music * bgm; // 背景音乐
+    std::map<std::string, Mix_Chunk*> sounds; // 存储音效
     
 };
 

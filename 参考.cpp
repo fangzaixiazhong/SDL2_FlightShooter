@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
     if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
         std::cerr << "Mix_OpenAudio Error: " << Mix_GetError() << std::endl;
     }
-    Mix_Music * music = Mix_LoadMUS("../assets/music/03_Racing_Through_Asteroids_Loop.ogg");
+    Mix_Music * music = Mix_LoadMUS("../assets/music/03_Racing_Through_Asteroids_Loop.ogg"); //Mix_Music播放时解码，只能一个；Mix_Chunk播放时解码，可以多个
     if(music == nullptr) {
         std::cerr << "Mix_LoadMUS Error: " << Mix_GetError() << std::endl;
     }

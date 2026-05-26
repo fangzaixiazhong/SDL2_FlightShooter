@@ -5,6 +5,8 @@
 #include "Scene.h"
 #include "SDL2/SDL.h"
 #include "SceneMain.h"
+#include "SDL2/SDL_mixer.h"
+#include "SDL2/SDL_ttf.h"
 class Game
 {
 public:
