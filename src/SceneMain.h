@@ -8,6 +8,7 @@
 #include "SDL2/SDL_mixer.h"
 #include "SDL2/SDL_ttf.h"
 #include <map>
+#include "SceneEnd.h"
 class Game; // forward declaration,声明存在这个类，防止循环引用
 class SceneMain : public Scene {
 public:
@@ -47,7 +48,7 @@ public:
     void renderItems();
 
     void renderUI();
-
+    void changeSceneDelayed(float deltaTime, float delay);
 
 private:
     Game &game;
@@ -95,6 +96,7 @@ private:
     TTF_Font* scoreFont;
     int score = 0;
     
+    float timerEnd = 0.0f;
 };
 
 #endif // SCENE_MAIN_H

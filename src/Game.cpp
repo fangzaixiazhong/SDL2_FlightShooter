@@ -59,6 +59,7 @@ void Game::init()
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Renderer could not be created! SDL_Error: %s\n", SDL_GetError());
         isRunning = false;
     }
+    SDL_RenderSetLogicalSize(renderer, windowWidth, windowHeight);
         //初始化音频
     if (Mix_Init(MIX_INIT_MP3 | MIX_INIT_OGG) != (MIX_INIT_MP3 | MIX_INIT_OGG)) {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError());
@@ -88,7 +89,14 @@ void Game::init()
     farStars.width /= 2;
     farStars.speed = 20;  // 远处的星星移动速度较慢
 
-    currentScene = new SceneMain();
+    titleFont = TTF_OpenFont("../assets/font/VonwaonBitmap-16px.ttf", 64);
+    textFont = TTF_OpenFont("../assets/font/VonwaonBitmap-16px.ttf", 32);
+    if (titleFont == nullptr || textFont == nullptr) {
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "TTF_OpenFont: %s\n", TTF_GetError());
+        isRunning = false;
+    }
+
+    currentScene = new SceneTitle();
     currentScene->init();
     frametime = 1000 / fps;
 
@@ -120,12 +128,12 @@ void Game::clean()
 
 void Game::changeScene(Scene *scene)
 {
+    if(currentScene == scene) return;
     if (currentScene != nullptr)
     {
         currentScene->clean();
         delete currentScene;
     }
-    if(currentScene == scene) return;
     currentScene = scene;
     currentScene->init();
 }
@@ -154,10 +162,19 @@ void Game::handleEvent(SDL_Event *event)
         {
             isRunning = false;
         }
+        if (event->type == SDL_KEYDOWN){
+            if (event->key.keysym.scancode == SDL_SCANCODE_F4){
+                isFullscreen = !isFullscreen;
+                if (isFullscreen){
+                    SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
+                }else{
+                    SDL_SetWindowFullscreen(window, 0);
+                }
+            }
+        }
         currentScene->handleEvent(event);
     }
 }
-// Game.cpp
 void Game::backgroundUpdate(float deltaTime)
 {
     nearStars.offset += nearStars.speed * deltaTime;
@@ -189,5 +206,52 @@ void Game::renderBackground()
             SDL_Rect dstRect = {posX, posY, nearStars.width, nearStars.height};
             SDL_RenderCopy(renderer, nearStars.texture, nullptr, &dstRect);
         }   
+    }
+}
+
+// Game.cpp
+SDL_Point Game::renderTextCentered(std::string text, float posY, bool isTitle)
+{
+    SDL_Color color = {255, 255, 255, 255};
+    SDL_Surface *surface;
+    if (isTitle){
+        surface = TTF_RenderUTF8_Solid(titleFont, text.c_str(), color);
+    }else{
+        surface = TTF_RenderUTF8_Solid(textFont, text.c_str(), color);
+    }
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+    int y = static_cast<int>((getWindowHeight() - surface->h) * posY);
+    SDL_Rect rect = {getWindowWidth() / 2 - surface->w / 2,
+                     y,
+                     surface->w,
+                     surface->h};
+    SDL_RenderCopy(renderer, texture, NULL, &rect);
+    SDL_DestroyTexture(texture);
+    SDL_FreeSurface(surface);
+    return {rect.x + rect.w, y};  // 返回文本末尾的坐标
+}
+
+void Game::renderTextPos(std::string text, int posX, int posY, bool isLeft)
+{
+    SDL_Color color = {255, 255, 255, 255};
+    SDL_Surface *surface = TTF_RenderUTF8_Solid(textFont, text.c_str(), color);
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Rect rect;
+    if (isLeft){
+        rect = {posX, posY, surface->w, surface->h};
+    }else{
+        rect = {getWindowWidth() - posX - surface->w, posY, surface->w, surface->h};
+    }
+    SDL_RenderCopy(renderer, texture, NULL, &rect);
+    SDL_DestroyTexture(texture);
+    SDL_FreeSurface(surface);
+}
+
+// Game.cpp
+void Game::insertLeaderBoard(int score, std::string name)
+{
+    leaderBoard.insert({score, name});
+    if (leaderBoard.size() > 8){
+        leaderBoard.erase(--leaderBoard.end());
     }
 }

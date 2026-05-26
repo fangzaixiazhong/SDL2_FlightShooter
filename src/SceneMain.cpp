@@ -19,6 +19,9 @@ void SceneMain::update(float deltatime)
     updateEnemyProjectiles(deltatime); // 更新敌机子弹
     updateExplosions(deltatime); // 更新爆炸效果
     updateItems(deltatime);  // 添加更新物品
+    if (isDead){
+        changeSceneDelayed(deltatime, 3); // 3秒后切换到结束场景
+    }
 }
 
 void SceneMain::render()
@@ -192,7 +195,7 @@ void SceneMain::init()
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to load Health UI Black.png! SDL_Error: %s\n", SDL_GetError());
     }
     //初始化SDL_ttfLibrary
-    
+
     // 载入字体
     scoreFont = TTF_OpenFont("../assets/font/VonwaonBitmap-12px.ttf", 24);
     if (scoreFont == nullptr) {
@@ -708,9 +711,12 @@ void SceneMain::updatePlayer(float deltaTime)
     }
 
     if (player.currentHealth <= 0){
+        auto currentTime = SDL_GetTicks();
         // 玩家死亡处理
         isDead = true;
         playerExplode(&player);
+        game.setFinalScore(score);
+        return;
     }
     for (auto enemy : enemies){
         SDL_Rect enemyRect = {
@@ -940,4 +946,14 @@ void SceneMain::renderUI()
     SDL_RenderCopy(game.getRenderer(), texture, NULL, &rect);
     SDL_FreeSurface(surface);
     SDL_DestroyTexture(texture);
+}
+
+// SceneMain.cpp
+void SceneMain::changeSceneDelayed(float deltaTime, float delay)
+{
+    timerEnd += deltaTime;
+    if (timerEnd > delay){
+        auto sceneEnd = new SceneEnd();
+        game.changeScene(sceneEnd);
+    }
 }

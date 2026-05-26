@@ -28,7 +28,10 @@ find_package(SDL2_ttf REQUIRED)
 # 添加可执行文件
 add_executable(${TARGET} "src/main.cpp"
                 "src/Game.cpp"
-                "src/SceneMain.cpp")
+                "src/Scene.cpp"
+                "src/SceneMain.cpp"
+                "src/SceneTitle.cpp"
+                "src/SceneEnd.cpp")
 
 # 链接库
 target_link_libraries(${TARGET}

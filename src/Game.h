@@ -5,6 +5,7 @@
 #include "Scene.h"
 #include "SDL2/SDL.h"
 #include "SceneMain.h"
+#include "SceneTitle.h"
 #include "SDL2/SDL_mixer.h"
 #include "SDL2/SDL_ttf.h"
 #include "Object.h"
@@ -20,6 +21,10 @@ public:
     void init();
     void clean();
     void changeScene(Scene* scene);
+    // 渲染文字函数
+        SDL_Point renderTextCentered(std::string text, float posY, bool isTitle);
+    void renderTextPos(std::string text, int posX, int posY,bool isLeft = true);
+    
      void handleEvent(SDL_Event *event);
     void update(float deltatime);
     void render();
@@ -35,6 +40,14 @@ public:
     }
     void backgroundUpdate(float deltaTime);
     void renderBackground();
+    // setters
+    void setFinalScore(int score) { finalScore = score; }
+
+    // getters
+    int getFinalScore() { return finalScore; }
+
+    void insertLeaderBoard(int score, std::string name); // 插入排行榜
+    std::multimap<int, std::string, std::greater<int>>& getLeaderBoard() { return leaderBoard; } // 返回leaderBoard的引用
 private:
     Game(const Game&) = delete;
     Game& operator=(const Game&) = delete;
@@ -51,6 +64,13 @@ private:
     bool aotoShoot{false};
     Background nearStars;  // 近处的星星
     Background farStars;   // 远处的星星
+
+    TTF_Font* titleFont;
+    TTF_Font* textFont;
+    int finalScore;
+
+    std::multimap<int, std::string, std::greater<int>> leaderBoard;
+    bool isFullscreen = false;
 };
 
 #endif
