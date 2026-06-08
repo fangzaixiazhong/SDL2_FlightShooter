@@ -17,7 +17,7 @@ struct Player{
     bool underSkill = false;    //是否正在使用技能
     Uint32 lastSkillTime = 0;   //上次使用技能时间
     int skillTime = 3;       //技能持续轮次
-    float skillCD = 10.0f;       //技能冷却时间（秒）
+    float skillCD = 12.5f;       //技能冷却时间（秒）
 
 };
 struct ProjectilePlayer{
@@ -99,5 +99,23 @@ struct Background{
     int width = 0;
     int height = 0;
     int speed = 30;
+};
+
+struct Boss{
+    SDL_Texture* texture = nullptr;
+    SDL_FPoint position = {0, 0};
+    int width = 0;
+    int height = 0;
+    int speed = 100;         // 敌机移动速度
+    Uint32 coolDown = 1300;     // 发射冷却时间（1秒）
+    Uint32 lastShootTime = 0;   // 上次发射时间
+    int currentHealth = 80;
+    int maxHealth = 80;      // 敌机初始生命值
+    int score = 200;
+    Uint32 lastMovetime = 0;
+    SDL_FPoint moveDirection = {0, 1};
+    Uint32 moveDuration = 1000;
+    Boss() = default;
+    Boss(const Boss& other) = default;
 };
 #endif // OBJECT_H

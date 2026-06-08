@@ -50,6 +50,16 @@ public:
     void renderUI();
     void changeSceneDelayed(float deltaTime, float delay);
 
+    void shootBoss(Boss* boss);
+    void shootBossAim(Boss* boss, int count);
+    void shootBossRing(Boss* boss, int bullets = 12);
+    void shootBossSpiral(Boss* boss, int bullets = 4, float angleStep = 15.0f);
+    void shootBossFan(Boss* boss, int bullets = 5, float spread = 30.0f);
+    void updateBoss(float deltaTime);
+    void renderBoss();
+    void enterBossStage();
+    void bossExplode(Boss* );
+
 private:
     Game &game;
     Player player;
@@ -65,7 +75,7 @@ private:
     
     // 敌机相关成员
     Enemy enemyTemplate1;                      // 敌机模板
-    Enemy enemyTemplate2{2400,120,3,15};                      // 敌机模板
+    Enemy enemyTemplate2{2400,120,3,15};                   // 敌机模板
     std::list<Enemy*> enemies;                // 存储活动敌机的列表
 
     ProjectileEnemy projectileEnemyTemplate1;    // 敌机子弹模板
@@ -97,6 +107,9 @@ private:
     int score = 0;
     
     float timerEnd = 0.0f;
+    Boss bossTemplate;  // boss 模板
+    Boss *boss = nullptr;
+    bool isInBossStage = false;
 };
 
 #endif // SCENE_MAIN_H

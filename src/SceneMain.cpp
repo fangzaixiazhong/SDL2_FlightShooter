@@ -14,7 +14,11 @@ void SceneMain::update(float deltatime)
     updatePlayer(deltatime);  // 添加更新玩家状态
     keyBoardControl(deltatime);
     updatePlayerProjectiles(deltatime);
-    spawEnemy();                 // 生成敌机
+    if(score >= 200 && score <=300 && !isInBossStage){
+        enterBossStage();
+    }
+    if(!isInBossStage) spawEnemy();                 // 生成敌机
+    else updateBoss(deltatime);
     updateEnemies(deltatime);    // 更新敌机
     updateEnemyProjectiles(deltatime); // 更新敌机子弹
     updateExplosions(deltatime); // 更新爆炸效果
@@ -36,7 +40,8 @@ void SceneMain::render()
         SDL_Rect shieldRect = {static_cast<int>(player.position.x - 0.25 * player.width), static_cast<int>(player.position.y - 0.8 * player.height), static_cast<int>(1.5*player.width),static_cast<int>(1.5* player.height)};
         SDL_RenderCopy(game.getRenderer(), shield_photo, NULL, &shieldRect);
     }
-    renderEnemies();
+    if(isInBossStage)renderBoss();
+    else renderEnemies();
     renderExplosions();
     renderItems();
     renderUI();
@@ -202,6 +207,15 @@ void SceneMain::init()
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to load font! SDL_ttf Error: %s\n", TTF_GetError());
     }
     SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "SceneMain init");
+
+    // 初始化 boss 模板
+    bossTemplate.texture = IMG_LoadTexture(game.getRenderer(), "../assets/image/boss.png");
+    if (bossTemplate.texture == nullptr) {
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to load boss.png! SDL_Error: %s\n", SDL_GetError());
+    }
+    SDL_QueryTexture(bossTemplate.texture, NULL, NULL, &bossTemplate.width, &bossTemplate.height);
+    bossTemplate.width /= 2;
+    bossTemplate.height /= 2;
 }
 
 void SceneMain::clean()
@@ -290,6 +304,15 @@ void SceneMain::clean()
     if (scoreFont != nullptr){
         TTF_CloseFont(scoreFont);
     }
+    // 清理 boss 模板纹理
+    if(bossTemplate.texture != nullptr){
+        SDL_DestroyTexture(bossTemplate.texture);
+    }
+    // 清理 boss 指针
+    if(boss != nullptr){
+        delete boss;
+        boss = nullptr;
+    }
 }
 void SceneMain::keyBoardControl(float deltatime){
     auto keyborad = SDL_GetKeyboardState(NULL);
@@ -354,7 +377,7 @@ void SceneMain::useSkill()
     player.lastSkillTime = SDL_GetTicks();
 
     // 左前方子弹（projectilePlayerTemplate1）
-    for(float i = 3.5; i< 8;i+=0.5){
+    for(float i = 3.5; i< 8;i+=0.8){
     auto projectile1 = new ProjectilePlayer(projectilePlayerTemplate1);
     projectile1->position.x = player.position.x + player.width / 2 - projectile1->width / 2;
     projectile1->position.y = player.position.y;
@@ -390,6 +413,7 @@ void SceneMain::updatePlayerProjectiles(float deltaTime)
             it = projectilesPlayer.erase(it);
         }else {
             bool ishit = false;
+            if(!isInBossStage){
             for(auto enemy : enemies){
                 SDL_Rect enemyRect = {
                     static_cast<int>(enemy->position.x),
@@ -406,6 +430,28 @@ void SceneMain::updatePlayerProjectiles(float deltaTime)
                 if(SDL_HasIntersection(&enemyRect, &projectileRect)){
                     ishit = true;
                     enemy->currentHealth -= projectile->damage;
+                    delete projectile;
+                    it = projectilesPlayer.erase(it);
+                    Mix_PlayChannel(-1, sounds["hit"], 0);
+                    break;
+                }
+        }}
+        else{
+            SDL_Rect enemyRect = {
+                    static_cast<int>(boss->position.x),
+                    static_cast<int>(boss->position.y),
+                    boss->width,
+                    boss->height
+                };
+                SDL_Rect projectileRect = {
+                    static_cast<int>(projectile->position.x),
+                    static_cast<int>(projectile->position.y),
+                    projectile->width,
+                    projectile->height
+                };
+                if(SDL_HasIntersection(&enemyRect, &projectileRect)){
+                    ishit = true;
+                    boss->currentHealth -= projectile->damage;
                     delete projectile;
                     it = projectilesPlayer.erase(it);
                     Mix_PlayChannel(-1, sounds["hit"], 0);
@@ -629,7 +675,7 @@ void SceneMain::updatePlayer(float deltaTime)
         auto currentTime = SDL_GetTicks();
         if (currentTime - player.lastShootTime > player.coolDown) {
             player.skillTime -= 1;
-            for(float i = 9 ;i< 21;i+=2.5){
+            for(float i = 9 ;i< 21;i+=28){
     auto projectile1 = new ProjectilePlayer(projectilePlayerTemplate1);
     projectile1->position.x = player.position.x + player.width / 2 - projectile1->width / 2;
     projectile1->position.y = player.position.y;
@@ -650,7 +696,7 @@ void SceneMain::updatePlayer(float deltaTime)
     projectilesPlayer.push_back(projectile2);
     }
             // 左前方子弹
-            for(float i = 20; i< 100;i+=10){
+            for(float i = 20; i< 100;i+=12){
     auto projectile1 = new ProjectilePlayer(projectilePlayerTemplate1);
     projectile1->position.x = player.position.x + player.width / 2 - projectile1->width / 2;
     projectile1->position.y = player.position.y;
@@ -670,7 +716,7 @@ void SceneMain::updatePlayer(float deltaTime)
     projectile2->direction.y = -cos(angle2);
     projectilesPlayer.push_back(projectile2);
     }
-        for(float i = 3.5; i< 8;i+=1){
+        for(float i = 3.5; i< 8;i+=1.2){
     auto projectile1 = new ProjectilePlayer(projectilePlayerTemplate1);
     projectile1->position.x = player.position.x + player.width / 2 - projectile1->width / 2;
     projectile1->position.y = player.position.y;
@@ -718,6 +764,7 @@ void SceneMain::updatePlayer(float deltaTime)
         game.setFinalScore(score);
         return;
     }
+    if(!isInBossStage)
     for (auto enemy : enemies){
         SDL_Rect enemyRect = {
             static_cast<int>(enemy->position.x),
@@ -738,6 +785,28 @@ void SceneMain::updatePlayer(float deltaTime)
         player.shieldTime = 3.0f;
             }
             enemy->currentHealth = 0;
+        }
+    }
+    else{
+        SDL_Rect bossRect = {
+            static_cast<int>(boss->position.x),
+            static_cast<int>(boss->position.y),
+            boss->width,
+            boss->height
+        };
+        SDL_Rect playerRect = {
+            static_cast<int>(player.position.x),
+            static_cast<int>(player.position.y),
+            player.width,
+            player.height
+        };
+        if (SDL_HasIntersection(&playerRect, &bossRect)){
+            if (!player.hasShield) {
+                player.currentHealth -= 1;
+                player.hasShield = true;
+                player.shieldTime = 3.0f;
+            }
+
         }
     }
 }
@@ -955,5 +1024,215 @@ void SceneMain::changeSceneDelayed(float deltaTime, float delay)
     if (timerEnd > delay){
         auto sceneEnd = new SceneEnd();
         game.changeScene(sceneEnd);
+    }
+}
+void SceneMain::shootBoss(Boss *boss) {
+    float healthPercent = (float)boss->currentHealth / boss->maxHealth;
+    if (healthPercent > 0.66f) {
+        // 第一阶段：简单模式
+        int r = rand() % 3;
+        if (r==0) for (int i = 0; i < 4; i++){
+            ProjectileEnemy* projectile = new ProjectileEnemy(projectileEnemyTemplate3);
+            //x方向上4枚在boss的x上均匀分布
+            projectile->position.x = boss->position.x + boss->width / 4 * i - projectile->width / 2;
+            projectile->position.y = boss->position.y + boss->height - projectile->height / 2;
+            //方向
+            projectile->direction.x = 0;
+            projectile->direction.y = 1;
+            projectilesEnemy.push_back(projectile);
+        }
+         else if (r==1) for (int i = 0; i < 8; i++){
+            ProjectileEnemy* projectile;
+            if (i % 2 == 0){
+                projectile = new ProjectileEnemy(projectileEnemyTemplate1);
+            }
+            else{
+                projectile = new ProjectileEnemy(projectileEnemyTemplate2);
+            }
+            projectile->position.x = boss->position.x + boss->width / 2- projectile->width / 2;
+            projectile->position.y = boss->position.y + boss->height - projectile->height / 2;
+            projectile->direction.x = dis(gen) * 2 - 1; // 生成-1到1之间的随机浮点数
+            projectile->direction.y = 1;
+            projectilesEnemy.push_back(projectile);
+        }
+            else shootBossAim(boss, 1);
+    } else if (healthPercent > 0.33f) {
+        // 第二阶段：中等
+        int r = rand() % 3;
+        if (r==0) shootBossRing(boss, 8);
+        else if (r==1) shootBossFan(boss, 5, 45);
+        else shootBossAim(boss, 2);
+    } else {
+        // 第三阶段：困难，多种组合同时发射
+        shootBossRing(boss, 12);
+        shootBossAim(boss, 3);
+        shootBossSpiral(boss);
+    }
+    Mix_PlayChannel(-1, sounds["enemy_shoot"], 0);
+}
+
+  void SceneMain::updateBoss(float deltaTime){
+    if(boss == nullptr) return;
+    
+    auto currentTime = SDL_GetTicks();
+    if(boss->currentHealth <= 0){
+        bossExplode(boss);
+        delete boss;
+        boss = nullptr;
+        return;
+    }
+    if (currentTime - boss->lastShootTime > boss->coolDown && !isDead){
+        shootBoss(boss);
+        boss->lastShootTime = currentTime;
+    }
+    //移动控制：随机方向保持一定帧数，无法越过边界与到达下半场
+    if( currentTime - boss->lastMovetime > boss->moveDuration){
+        float x = dis(gen) * 2.0f - 1.0f;
+float y = dis(gen) * 2.0f - 1.0f;
+float len = sqrt(x*x + y*y);
+if (len > 0.0001f) {
+    boss->moveDirection.x = x / len;
+    boss->moveDirection.y = y / len;
+} else {
+    boss->moveDirection.x = 0;
+    boss->moveDirection.y = 1;   // 默认向下
+}
+        boss->lastMovetime = currentTime;
+    }
+    if ((boss->position.y > game.getWindowHeight() / 2 && boss->moveDirection.y > 0 )|| boss->position.y < 0 && boss->moveDirection.y < 0){
+        boss->moveDirection.y = -boss->moveDirection.y;
+    }
+    if( (boss->position.x < 0 && boss->moveDirection.x < 0) || (boss->position.x + boss->width > game.getWindowWidth() && boss->moveDirection.x > 0)){
+        boss->moveDirection.x = -boss->moveDirection.x;
+    }
+    boss->position.x += boss->speed * boss->moveDirection.x * deltaTime;
+    boss->position.y += boss->speed * boss->moveDirection.y * deltaTime;
+  }
+void SceneMain::renderBoss(){
+    if(boss == nullptr) return;
+    SDL_Rect bossRect = {boss->position.x, boss->position.y, boss->width, boss->height};
+    SDL_RenderCopy(game.getRenderer(), boss->texture, NULL, &bossRect);
+}
+  //todo:剩下的几个函数
+  //boss出场时位置
+void SceneMain::enterBossStage(){
+    // 先清理旧的 boss（如果存在）
+    if(boss != nullptr){
+        delete boss;
+        boss = nullptr;
+    }
+    // 创建新的 boss
+    boss = new Boss();
+    // 从模板复制属性
+    boss->texture = bossTemplate.texture;
+    boss->width = bossTemplate.width;
+    boss->height = bossTemplate.height;
+    boss->speed = bossTemplate.speed;
+    boss->coolDown = bossTemplate.coolDown;
+    boss->currentHealth = bossTemplate.currentHealth;
+    boss->score = bossTemplate.score;
+    boss->moveDuration = bossTemplate.moveDuration;
+    boss->moveDirection = {0, 1};
+boss->lastMovetime = SDL_GetTicks();
+boss->moveDuration = 2000;  // 确保有合理值
+    if (bossTemplate.texture == nullptr) {
+    SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Boss texture is null, cannot enter boss stage!");
+    return;
+}
+    //清除所有敌人、子弹与道具
+    for(auto enemy : enemies){
+        delete enemy;
+    }
+    enemies.clear();
+    
+    for(auto projectile : projectilesEnemy){
+        delete projectile;
+    }
+    projectilesEnemy.clear();
+    
+    for(auto item : items){
+        delete item;
+    }
+    items.clear();
+    
+    isInBossStage = true;
+    //设置玩家与boss的初始位置
+    player.position.x = game.getWindowWidth() / 2 - player.width / 2;
+    player.position.y = 3 * game.getWindowHeight() / 4 - player.height / 2;
+    boss->position.x = game.getWindowWidth() / 2 - boss->width / 2;
+    boss->position.y =  boss->height + game.getWindowHeight() / 10;
+}
+
+void SceneMain::bossExplode(Boss *boss){
+    auto explosion = new Explosion(explosionTemplate);
+    explosion->position.x = boss->position.x + boss->width / 2 - explosion->width / 2;
+    explosion->position.y = boss->position.y + boss->height / 2 - explosion->height / 2;
+    explosion->startTime = SDL_GetTicks();
+    explosions.push_back(explosion);
+    Mix_PlayChannel(-1, sounds["enemy_explode"], 0);
+    isInBossStage = false;
+    score+=boss->score;
+}
+
+void SceneMain::shootBossAim(Boss* boss, int count) {
+    for (int i = 0; i < count; i++) {
+        ProjectileEnemy* proj = new ProjectileEnemy(projectileEnemyTemplate3); // 或混合模板
+        proj->position.x = boss->position.x + boss->width/2 - proj->width/2;
+        proj->position.y = boss->position.y + boss->height - proj->height/2;
+        // 方向指向玩家中心（可加微小偏移实现散弹）
+        float dx = (player.position.x + player.width/2) - (proj->position.x + proj->width/2);
+        float dy = (player.position.y + player.height/2) - (proj->position.y + proj->height/2);
+        float len = sqrt(dx*dx + dy*dy);
+        if (len > 0) {
+            proj->direction.x = dx / len;
+            proj->direction.y = dy / len;
+        } else {
+            proj->direction = {0, 1};
+        }
+        projectilesEnemy.push_back(proj);
+    }
+}
+
+void SceneMain::shootBossRing(Boss* boss, int bullets) {
+    for (int i = 0; i < bullets; i++) {
+        float angle = (2 * M_PI / bullets) * i;
+        ProjectileEnemy* proj = new ProjectileEnemy(projectileEnemyTemplate1);
+        proj->position.x = boss->position.x + boss->width/2 - proj->width/2;
+        proj->position.y = boss->position.y + boss->height/2 - proj->height/2;
+        proj->direction.x = cos(angle);
+        proj->direction.y = sin(angle);
+        projectilesEnemy.push_back(proj);
+    }
+}
+
+void SceneMain::shootBossSpiral(Boss* boss, int bullets, float angleStep) {
+    static float currentAngle = 0.0f; // 或存在 boss 结构体中
+    for (int i = 0; i < bullets; i++) {
+        float angle = currentAngle + i * angleStep * M_PI / 180.0f;
+        ProjectileEnemy* proj = new ProjectileEnemy(projectileEnemyTemplate2);
+        proj->position.x = boss->position.x + boss->width/2 - proj->width/2;
+        proj->position.y = boss->position.y + boss->height/2 - proj->height/2;
+        proj->direction.x = cos(angle);
+        proj->direction.y = sin(angle);
+        projectilesEnemy.push_back(proj);
+    }
+    currentAngle += 20.0f; // 每轮增加角度
+}
+
+void SceneMain::shootBossFan(Boss* boss, int bullets, float spread) {
+    // 计算指向玩家的基准角度
+    float baseAngle = atan2(player.position.y + player.height/2 - (boss->position.y + boss->height/2),
+                            player.position.x + player.width/2 - (boss->position.x + boss->width/2));
+    float startAngle = baseAngle - spread * M_PI / 180.0f / 2;
+    float step = spread * M_PI / 180.0f / (bullets - 1);
+    for (int i = 0; i < bullets; i++) {
+        float angle = startAngle + i * step;
+        ProjectileEnemy* proj = new ProjectileEnemy(projectileEnemyTemplate3);
+        // 位置可放在 Boss 前方边缘
+        proj->position.x = boss->position.x + boss->width/2 - proj->width/2;
+        proj->position.y = boss->position.y + boss->height - proj->height/2;
+        proj->direction.x = cos(angle);
+        proj->direction.y = sin(angle);
+        projectilesEnemy.push_back(proj);
     }
 }
